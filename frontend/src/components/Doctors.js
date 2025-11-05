@@ -3,118 +3,75 @@ import axios from 'axios';
 import DoctorCard from './DoctorCard';
 import './Doctors.css';
 
-const API_URL = 'http://localhost:5000';
-
 const Doctors = () => {
   const [doctors, setDoctors] = useState([]);
   const [newDoctor, setNewDoctor] = useState({ name: '', specialty: '' });
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
-    console.log('Component mounted, fetching doctors...');
     fetchDoctors();
   }, []);
 
-  const fetchDoctors = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      console.log('Fetching doctors from:', `${API_URL}/doctors`);
-      
-      const response = await axios.get(`${API_URL}/doctors`);
-      console.log('Doctors fetched successfully:', response.data);
-      setDoctors(response.data);
-    } catch (error) {
-      console.error('Error fetching doctors:', error);
-      console.error('Error details:', error.response?.data || error.message);
-      setError('Failed to fetch doctors. Make sure backend is running on port 5000.');
-    } finally {
-      setLoading(false);
-    }
+  const fetchDoctors = () => {
+    axios.get('http://localhost:5000/api/doctors')
+      .then(response => {
+        setDoctors(response.data);
+      })
+      .catch(error => {
+        alert('Cannot connect to backend. Make sure server is running on port 5000');
+      });
   };
 
-  const handleAddDoctor = async (e) => {
+  const handleAddDoctor = (e) => {
     e.preventDefault();
-    console.log('Add doctor button clicked');
-    console.log('New doctor data:', newDoctor);
 
-    if (!newDoctor.name || !newDoctor.specialty) {
+    if (!newDoctor.name.trim() || !newDoctor.specialty.trim()) {
       alert('Please fill in all fields');
       return;
     }
 
-    try {
-      setLoading(true);
-      console.log('Sending POST request to:', `${API_URL}/doctors/add`);
-      
-      const response = await axios.post(`${API_URL}/doctors/add`, newDoctor);
-      console.log('Doctor added successfully:', response.data);
-      
-      setDoctors([...doctors, response.data]);
-      setNewDoctor({ name: '', specialty: '' });
-      alert('Doctor added successfully!');
-    } catch (error) {
-      console.error('Error adding doctor:', error);
-      console.error('Error details:', error.response?.data || error.message);
-      alert('Error adding doctor: ' + (error.response?.data || error.message));
-    } finally {
-      setLoading(false);
-    }
+    axios.post('http://localhost:5000/api/doctors/add', newDoctor)
+      .then(response => {
+        setDoctors([...doctors, response.data]);
+        setNewDoctor({ name: '', specialty: '' });
+        alert('Doctor added successfully!');
+      })
+      .catch(error => {
+        alert('Error: ' + (error.response?.data || error.message));
+      });
   };
 
-  const handleUpdateDoctor = async (id, e) => {
+  const handleUpdateDoctor = (id, e) => {
     e.preventDefault();
-    console.log('Update doctor button clicked');
-    console.log('Updating doctor ID:', id);
-    console.log('Updated data:', selectedDoctor);
 
-    try {
-      setLoading(true);
-      const response = await axios.post(`${API_URL}/doctors/update/${id}`, selectedDoctor);
-      console.log('Doctor updated:', response.data);
-      
-      const updateDoc = { ...selectedDoctor, _id: id };
-      setDoctors(doctors.map(doctor => (doctor._id === id ? updateDoc : doctor)));
-      setSelectedDoctor(null);
-      setIsEditMode(false);
-      alert('Doctor updated successfully!');
-    } catch (error) {
-      console.error('Error updating doctor:', error);
-      alert('Error updating doctor: ' + (error.response?.data || error.message));
-    } finally {
-      setLoading(false);
-    }
+    axios.post(`http://localhost:5000/api/doctors/update/${id}`, selectedDoctor)
+      .then(response => {
+        const updateDoc = { ...selectedDoctor, _id: id };
+        setDoctors(doctors.map(doctor => (doctor._id === id ? updateDoc : doctor)));
+        setSelectedDoctor(null);
+        setIsEditMode(false);
+        alert('Doctor updated successfully!');
+      })
+      .catch(error => {
+        alert('Error updating doctor');
+      });
   };
 
-  const handleDeleteDoctor = async (id) => {
-    console.log('Delete doctor button clicked for ID:', id);
-    
-    if (!window.confirm('Are you sure you want to delete this doctor?')) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      console.log('Sending DELETE request for doctor ID:', id);
-      
-      const response = await axios.delete(`${API_URL}/doctors/delete/${id}`);
-      console.log('Doctor deleted:', response.data);
-      
-      setDoctors(doctors.filter(doctor => doctor._id !== id));
-      alert('Doctor deleted successfully!');
-    } catch (error) {
-      console.error('Error deleting doctor:', error);
-      alert('Error deleting doctor: ' + (error.response?.data || error.message));
-    } finally {
-      setLoading(false);
+  const handleDeleteDoctor = (id) => {
+    if (window.confirm('Are you sure you want to delete this doctor?')) {
+      axios.delete(`http://localhost:5000/api/doctors/delete/${id}`)
+        .then(response => {
+          setDoctors(doctors.filter(doctor => doctor._id !== id));
+          alert('Doctor deleted successfully!');
+        })
+        .catch(error => {
+          alert('Error deleting doctor');
+        });
     }
   };
 
   const handleEditDoctor = (doctor) => {
-    console.log('Edit button clicked for doctor:', doctor);
     setSelectedDoctor(doctor);
     setIsEditMode(true);
   };
@@ -124,37 +81,23 @@ const Doctors = () => {
     setIsEditMode(false);
   };
 
-  if (error) {
-    return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
-        <h3 style={{ color: 'red' }}>Error</h3>
-        <p>{error}</p>
-        <button onClick={fetchDoctors}>Retry</button>
-      </div>
-    );
-  }
-
   return (
     <div className='main-doc-container'>
       <div className='form-sections'>
         <h4>{isEditMode ? 'Edit Doctor' : 'Add New Doctor'}</h4>
-        <form
-          onSubmit={
-            isEditMode
-              ? (e) => handleUpdateDoctor(selectedDoctor._id, e)
-              : handleAddDoctor
-          }
-        >
+        <form onSubmit={isEditMode ? (e) => handleUpdateDoctor(selectedDoctor._id, e) : handleAddDoctor}>
           <label>Name:</label>
           <input
             type="text"
             required
-            value={isEditMode ? selectedDoctor?.name || '' : newDoctor.name}
+            placeholder="Enter doctor name"
+            value={isEditMode ? (selectedDoctor?.name || '') : newDoctor.name}
             onChange={(e) => {
-              console.log('Name input changed:', e.target.value);
-              isEditMode
-                ? setSelectedDoctor({ ...selectedDoctor, name: e.target.value })
-                : setNewDoctor({ ...newDoctor, name: e.target.value });
+              if (isEditMode) {
+                setSelectedDoctor({ ...selectedDoctor, name: e.target.value });
+              } else {
+                setNewDoctor({ ...newDoctor, name: e.target.value });
+              }
             }}
           />
 
@@ -162,22 +105,24 @@ const Doctors = () => {
           <input
             type="text"
             required
-            value={isEditMode ? selectedDoctor?.specialty || '' : newDoctor.specialty}
+            placeholder="Enter specialty"
+            value={isEditMode ? (selectedDoctor?.specialty || '') : newDoctor.specialty}
             onChange={(e) => {
-              console.log('Specialty input changed:', e.target.value);
-              isEditMode
-                ? setSelectedDoctor({ ...selectedDoctor, specialty: e.target.value })
-                : setNewDoctor({ ...newDoctor, specialty: e.target.value });
+              if (isEditMode) {
+                setSelectedDoctor({ ...selectedDoctor, specialty: e.target.value });
+              } else {
+                setNewDoctor({ ...newDoctor, specialty: e.target.value });
+              }
             }}
           />
 
-          <button type="submit" disabled={loading}>
-            {loading ? 'Processing...' : (isEditMode ? 'Update Doctor' : 'Add Doctor')}
+          <button type="submit">
+            {isEditMode ? 'Update Doctor' : 'Add Doctor'}
           </button>
-          
+
           {isEditMode && (
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={handleCancelEdit}
               style={{ marginTop: '10px', backgroundColor: '#6c757d' }}
             >
@@ -189,12 +134,9 @@ const Doctors = () => {
 
       <div className='doctors-section'>
         <h3>Doctors ({doctors.length})</h3>
-        {loading && <p>Loading...</p>}
         <div className="doctor-list">
           {doctors.length === 0 ? (
-            <p style={{ color: '#999', marginTop: '20px' }}>
-              No doctors yet. Add one to get started!
-            </p>
+            <p style={{ color: '#999', marginTop: '20px' }}>No doctors yet. Add one to get started!</p>
           ) : (
             doctors.map(doctor => (
               <DoctorCard

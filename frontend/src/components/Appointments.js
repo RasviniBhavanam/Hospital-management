@@ -22,9 +22,8 @@ const Appointments = () => {
   }, []);
 
   const fetchAppointments = () => {
-    axios.get('http://localhost:5000/appointments')
+    axios.get('http://localhost:5000/api/appointments')
       .then(response => {
-        console.log('Fetched appointments:', response.data);
         setAppointments(response.data);
       })
       .catch(error => {
@@ -33,9 +32,8 @@ const Appointments = () => {
   };
 
   const fetchDoctors = () => {
-    axios.get('http://localhost:5000/doctors')
+    axios.get('http://localhost:5000/api/doctors')
       .then(response => {
-        console.log('Fetched doctors:', response.data);
         setDoctors(response.data);
       })
       .catch(error => {
@@ -44,9 +42,8 @@ const Appointments = () => {
   };
 
   const fetchPatients = () => {
-    axios.get('http://localhost:5000/patients')
+    axios.get('http://localhost:5000/api/patients')
       .then(response => {
-        console.log('Fetched patients:', response.data);
         setPatients(response.data);
       })
       .catch(error => {
@@ -56,36 +53,30 @@ const Appointments = () => {
 
   const handleAddAppointment = (e) => {
     e.preventDefault();
-    
-    console.log('Form submitted');
-    console.log('Appointment data:', newAppointment);
 
     if (!newAppointment.patientName || !newAppointment.doctorName || !newAppointment.date) {
       alert('Please fill in all fields');
       return;
     }
 
-    axios.post('http://localhost:5000/appointments/add', newAppointment)
+    axios.post('http://localhost:5000/api/appointments/add', newAppointment)
       .then(response => {
-        console.log('Appointment added:', response.data);
         setAppointments([...appointments, response.data]);
         setNewAppointment({ patientName: '', doctorName: '', date: '' });
         alert('Appointment added successfully!');
       })
       .catch(error => {
-        console.error('Error adding appointment:', error);
         alert('Error: ' + (error.response?.data || error.message));
       });
   };
 
   const handleUpdateAppointment = (id, e) => {
     e.preventDefault();
-    
-    axios.post(`http://localhost:5000/appointments/update/${id}`, selectedAppointment)
+
+    axios.post(`http://localhost:5000/api/appointments/update/${id}`, selectedAppointment)
       .then(response => {
-        console.log('Appointment updated');
         const updateApp = { ...selectedAppointment, _id: id };
-        setAppointments(appointments.map(appointment => 
+        setAppointments(appointments.map(appointment =>
           appointment._id === id ? updateApp : appointment
         ));
         setSelectedAppointment(null);
@@ -93,21 +84,18 @@ const Appointments = () => {
         alert('Appointment updated successfully!');
       })
       .catch(error => {
-        console.error('Error updating appointment:', error);
         alert('Error updating appointment');
       });
   };
 
   const handleDeleteAppointment = (id) => {
     if (window.confirm('Are you sure you want to delete this appointment?')) {
-      axios.delete(`http://localhost:5000/appointments/delete/${id}`)
+      axios.delete(`http://localhost:5000/api/appointments/delete/${id}`)
         .then(response => {
-          console.log('Appointment deleted');
           setAppointments(appointments.filter(appointment => appointment._id !== id));
           alert('Appointment deleted successfully!');
         })
         .catch(error => {
-          console.error('Error deleting appointment:', error);
           alert('Error deleting appointment');
         });
     }
@@ -211,10 +199,10 @@ const Appointments = () => {
           <button type="submit">
             {isEditMode ? 'Update Appointment' : 'Add Appointment'}
           </button>
-          
+
           {isEditMode && (
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={handleCancelEdit}
               style={{ marginTop: '10px', backgroundColor: '#6c757d' }}
             >
@@ -224,15 +212,15 @@ const Appointments = () => {
         </form>
 
         {(doctors.length === 0 || patients.length === 0) && (
-          <div style={{ 
-            marginTop: '20px', 
-            padding: '15px', 
-            backgroundColor: '#fff3cd', 
+          <div style={{
+            marginTop: '20px',
+            padding: '15px',
+            backgroundColor: '#fff3cd',
             border: '1px solid #ffc107',
             borderRadius: '5px',
             color: '#856404'
           }}>
-            <strong>Note:</strong> Please add {doctors.length === 0 ? 'doctors' : ''} 
+            <strong>Note:</strong> Please add {doctors.length === 0 ? 'doctors' : ''}
             {doctors.length === 0 && patients.length === 0 ? ' and ' : ''}
             {patients.length === 0 ? 'patients' : ''} first before creating appointments.
           </div>
